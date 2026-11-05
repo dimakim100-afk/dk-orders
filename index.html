@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Заявка Dark Kitchen</title>
+<title>Dark Kitchen order</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -88,7 +88,7 @@ textarea.in{resize:vertical;min-height:64px}
 </head>
 <body>
 <div class="wrap" id="app"></div>
-<div class="bar" id="bar" hidden><div class="bar-in"><div class="bar-t" id="barT"></div><button class="btn" id="send" type="button">Отправить заявку</button></div></div>
+<div class="bar" id="bar" hidden><div class="bar-in"><div class="bar-t" id="barT"></div><button class="btn" id="send" type="button">Send order</button></div></div>
 
 <script>
 (function(){
@@ -150,25 +150,25 @@ textarea.in{resize:vertical;min-height:64px}
 
   function renderMain(){
     var v=S.venue;
-    var seg=S.locked?"":'<div class="seg" role="group" aria-label="Точка">'+["Cocoon","Luna"].map(function(n){
-      return '<button type="button" data-venue="'+n+'" aria-pressed="'+(S.venue===n)+'"><b>'+n+'</b><small>'+(count(n)?count(n)+" выбр.":"")+'</small></button>';
+    var seg=S.locked?"":'<div class="seg" role="group" aria-label="Venue">'+["Cocoon","Luna"].map(function(n){
+      return '<button type="button" data-venue="'+n+'" aria-pressed="'+(S.venue===n)+'"><b>'+n+'</b><small>'+(count(n)?count(n)+" selected":"")+'</small></button>';
     }).join("")+'</div>';
-    var fields='<div class="fields"><label class="f">На дату<input class="in" id="date" type="date" value="'+esc(S.date)+'"></label>'+
-      '<label class="f">Кто оформляет<select class="in" id="cook"><option value="">Выберите себя</option>'+
+    var fields='<div class="fields"><label class="f">For date<input class="in" id="date" type="date" value="'+esc(S.date)+'"></label>'+
+      '<label class="f">Ordered by<select class="in" id="cook"><option value="">Select your name</option>'+
       STAFF[v].map(function(n){return '<option'+(S.cooks[v]===n?" selected":"")+'>'+esc(n)+'</option>'}).join("")+'</select></label></div>';
-    var filters='<div class="filters"><input class="in" id="q" type="search" placeholder="Поиск по названию" value="'+esc(S.q)+'" autocomplete="off">'+
-      '<button class="chip" type="button" id="only" aria-pressed="'+S.only+'">Только выбранные</button></div>';
-    return '<h1>'+(S.locked?"Заявка · "+v:"Заявка Dark Kitchen")+'</h1><p class="sub">Полуфабрикаты от Dark Kitchen: выберите позиции и количество</p>'+
+    var filters='<div class="filters"><input class="in" id="q" type="search" placeholder="Search by name" value="'+esc(S.q)+'" autocomplete="off">'+
+      '<button class="chip" type="button" id="only" aria-pressed="'+S.only+'">Selected only</button></div>';
+    return '<h1>'+(S.locked?"Order · "+v:"Dark Kitchen order")+'</h1><p class="sub">Semi-finished products from Dark Kitchen: choose items and quantities</p>'+
       seg+fields+filters+'<ul class="list" id="list"></ul>'+
-      '<label class="f note">Комментарий к заявке<textarea class="in" id="comment" placeholder="Срочность, время, что учесть">'+esc(S.comment)+'</textarea></label>'+
+      '<label class="f note">Order comment<textarea class="in" id="comment" placeholder="Urgency, time, anything to note">'+esc(S.comment)+'</textarea></label>'+
       (S.error?'<div class="status bad" role="alert">'+esc(S.error)+'</div>':'');
   }
   function rowHtml(x){
     var cur=S.qty[S.venue][x.id]||0;
-    return '<li class="row'+(x.stage?" s1":"")+(cur?" sel":"")+'" data-id="'+x.id+'"><div><div class="nm">'+esc(x.name)+(x.stage?'<span class="tag1">1 этап</span>':'')+'</div><div class="meta">'+(x.num!==""&&x.num!=null?"№ "+x.num:"")+'</div></div>'+
-      '<div class="step"><button type="button" data-act="minus" aria-label="Меньше">−</button>'+
-      '<input type="text" inputmode="decimal" data-qty value="'+(cur?fmt(cur):"")+'" placeholder="0" aria-label="Количество, '+esc(x.name)+'">'+
-      '<button type="button" data-act="plus" aria-label="Больше">+</button><span class="unit">'+esc(x.unit)+'</span></div></li>';
+    return '<li class="row'+(x.stage?" s1":"")+(cur?" sel":"")+'" data-id="'+x.id+'"><div><div class="nm">'+esc(x.name)+(x.stage?'<span class="tag1">Stage 1</span>':'')+'</div><div class="meta">'+(x.num!==""&&x.num!=null?"#"+x.num:"")+'</div></div>'+
+      '<div class="step"><button type="button" data-act="minus" aria-label="Less">−</button>'+
+      '<input type="text" inputmode="decimal" data-qty value="'+(cur?fmt(cur):"")+'" placeholder="0" aria-label="Quantity, '+esc(x.name)+'">'+
+      '<button type="button" data-act="plus" aria-label="More">+</button><span class="unit">'+esc(x.unit)+'</span></div></li>';
   }
   function renderList(){
     var el=document.getElementById("list");if(!el)return;
@@ -178,26 +178,26 @@ textarea.in{resize:vertical;min-height:64px}
       if(S.only&&!S.qty[v][x.id])return false;
       return true;
     });
-    if(!rows.length){el.innerHTML='<li class="empty">Ничего не найдено</li>';return}
+    if(!rows.length){el.innerHTML='<li class="empty">Nothing found</li>';return}
     var s1=rows.filter(function(x){return x.stage}),rest=rows.filter(function(x){return !x.stage});
     if(!s1.length){el.innerHTML=rows.map(rowHtml).join("");return}
-    el.innerHTML='<li class="sec s1">1 этап <small>'+s1.length+' поз. · запуск 15.07</small></li>'+s1.map(rowHtml).join("")+
-      (rest.length?'<li class="sec">Остальные полуфабрикаты <small>'+rest.length+' поз.</small></li>'+rest.map(rowHtml).join(""):"");
+    el.innerHTML='<li class="sec s1">Stage 1 <small>'+s1.length+' items · launch 15.07</small></li>'+s1.map(rowHtml).join("")+
+      (rest.length?'<li class="sec">Other semi-finished products <small>'+rest.length+' items</small></li>'+rest.map(rowHtml).join(""):"");
   }
-  function plural(n){return n%10===1&&n%100!==11?"позиция":(n%10>=2&&n%10<=4&&(n%100<10||n%100>=20)?"позиции":"позиций")}
+  function plural(n){return n===1?"item":"items"}
   function renderBar(){
     if(S.done){bar.hidden=true;return}
     var n=count(S.venue);bar.hidden=false;
-    barT.innerHTML=S.error?'<b style="color:#d9342b">Не отправлено</b>'+esc(S.error):'<b>'+n+' '+plural(n)+'</b>'+S.venue+' · на '+esc(dm(S.date))+(S.cooks[S.venue]?"":" · выберите, кто оформляет");
+    barT.innerHTML=S.error?'<b style="color:#d9342b">Not sent</b>'+esc(S.error):'<b>'+n+' '+plural(n)+'</b>'+S.venue+' · for '+esc(dm(S.date))+(S.cooks[S.venue]?"":" · select who is ordering");
     sendBtn.disabled=S.busy||!n||!S.date||!S.cooks[S.venue];
-    sendBtn.textContent=S.busy?"Отправляю…":"Отправить заявку";
+    sendBtn.textContent=S.busy?"Sending…":"Send order";
   }
   function renderDone(){
     var s=S.done;
-    return '<div class="done"><h1>Заявка отправлена</h1><div class="status'+(s.warn?" bad":"")+'">'+
-      (s.warn?esc(s.warn):s.duplicate?"Эта заявка уже была отправлена.":"Заявка записана в таблицу и опубликована в ветке order.")+
-      '</div><p class="sub">'+esc(s.venue)+' · на '+esc(dm(s.date))+' · '+s.count+' '+plural(s.count)+'</p>'+
-      '<div class="acts">'+(tg?'<button class="btn" id="close" type="button">Закрыть</button>':'')+'<button class="btn ghost" id="again" type="button">Новая заявка</button></div></div>';
+    return '<div class="done"><h1>Order sent</h1><div class="status'+(s.warn?" bad":"")+'">'+
+      (s.warn?esc(s.warn):s.duplicate?"This order has already been sent.":"Order saved to the sheet and posted in the order thread.")+
+      '</div><p class="sub">'+esc(s.venue)+' · for '+esc(dm(s.date))+' · '+s.count+' '+plural(s.count)+'</p>'+
+      '<div class="acts">'+(tg?'<button class="btn" id="close" type="button">Close</button>':'')+'<button class="btn ghost" id="again" type="button">New order</button></div></div>';
   }
   function render(){
     app.innerHTML=S.done?renderDone():renderMain();
@@ -212,7 +212,7 @@ textarea.in{resize:vertical;min-height:64px}
     var row=app.querySelector('.row[data-id="'+id+'"]');
     if(row)row.classList.toggle("sel",val>0);
     var sm=app.querySelector('[data-venue="'+S.venue+'"] small');
-    if(sm){var n=count(S.venue);sm.textContent=n?n+" выбр.":""}
+    if(sm){var n=count(S.venue);sm.textContent=n?n+" selected":""}
     renderBar();
   }
 
@@ -264,11 +264,11 @@ textarea.in{resize:vertical;min-height:64px}
           S.qty[v]={};S.comment="";persist();
           if(tg&&tg.HapticFeedback){try{tg.HapticFeedback.notificationOccurred("success")}catch(e){}}
           render();window.scrollTo(0,0);
-        }else{S.error=(j&&j.error)||"Не удалось отправить. Нажмите кнопку ещё раз.";render();showErr()}
+        }else{S.error=(j&&j.error)||"Could not send. Press the button again.";render();showErr()}
       })
       .catch(function(err){
         clearTimeout(timer);S.busy=false;
-        S.error="Нет связи ("+(err&&err.message?err.message:"ошибка")+"). Заявка не отправлена, позиции сохранены. Нажмите кнопку ещё раз.";render();showErr();
+        S.error="No connection ("+(err&&err.message?err.message:"error")+"). Order not sent, items are kept. Press the button again.";render();showErr();
       });
   });
 
