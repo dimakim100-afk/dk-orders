@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Заявка Dark Kitchen</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#EDF0F0; --surface:#F8FAFA; --fg:#151D1D; --muted:#5B6767; --line:#D3DADA;
+  --accent:#0E6B5C; --accent-fg:#FFFFFF; --tint:#D9EEE8; --danger:#B3261E; --field:#FFFFFF;
+  --font-body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-head:'IBM Plex Sans Condensed','IBM Plex Sans',system-ui,sans-serif;
+  --font-num:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    color-scheme:dark;
+    --bg:#0F1515; --surface:#172020; --fg:#E6EEEC; --muted:#93A4A1; --line:#2A3736;
+    --accent:#4CC5AC; --accent-fg:#07201B; --tint:#173A33; --danger:#F2867E; --field:#121A1A;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--bg); color:var(--fg); font-family:var(--font-body); font-size:15px; line-height:1.4;
+  padding-top:max(16px,env(safe-area-inset-top,0px)); padding-bottom:130px;
+  padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px));
+}
+.wrap{max-width:720px;margin:0 auto}
+h1{font-family:var(--font-head);font-weight:600;font-size:28px;line-height:1.1;margin:0;text-wrap:balance}
+.sub{color:var(--muted);font-size:13px;margin:4px 0 0}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.seg{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface);margin-top:14px}
+.seg button{background:none;border:0;padding:11px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:8px;text-align:left}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+.seg b{font-family:var(--font-head);font-weight:600;font-size:17px}
+.seg small{font-family:var(--font-num);font-size:12px;opacity:.85}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0 12px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;min-width:0}
+.in{background:var(--field);border:1px solid var(--line);border-radius:8px;padding:9px 10px;font-size:15px;color:var(--fg);text-transform:none;letter-spacing:0;width:100%;min-width:0}
+textarea.in{resize:vertical;min-height:64px}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.filters .in{flex:1 1 160px}
+.chip{background:var(--field);border:1px solid var(--line);border-radius:8px;padding:9px 12px;font-size:14px;white-space:nowrap}
+.chip[aria-pressed="true"]{background:var(--tint);border-color:var(--accent)}
+.list{margin:0;padding:0;list-style:none}
+.row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 10px;border-bottom:1px solid var(--line)}
+.row.sel{background:var(--tint)}
+.nm{font-weight:500;overflow-wrap:anywhere;text-wrap:pretty}
+.meta{font-size:12px;color:var(--muted);margin-top:1px}
+.step{display:flex;align-items:center;gap:6px}
+.step button{width:36px;height:36px;border-radius:8px;border:1px solid var(--line);background:var(--field);font-size:20px;line-height:1;padding:0}
+.step input{width:62px;height:36px;text-align:center;font-family:var(--font-num);font-weight:500;font-size:15px;border:1px solid var(--line);border-radius:8px;background:var(--field);padding:0 4px}
+.row.sel .step input{border-color:var(--accent)}
+.unit{font-family:var(--font-num);font-size:12px;color:var(--muted);width:28px}
+.empty{color:var(--muted);padding:24px 10px;text-align:center}
+.note{margin:14px 0 0}
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);
+  padding-top:10px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.bar-in{max-width:720px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.bar-t{min-width:0;font-size:13px;color:var(--muted)}
+.bar-t b{display:block;color:var(--fg);font-family:var(--font-head);font-size:18px;font-weight:600}
+.btn{background:var(--accent);color:var(--accent-fg);border:0;border-radius:8px;padding:12px 18px;font-weight:600;font-size:15px;white-space:nowrap}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.btn.ghost{background:var(--field);color:var(--fg);border:1px solid var(--line)}
+.status{padding:10px 12px;border-radius:8px;background:var(--tint);margin:14px 0}
+.status.bad{background:transparent;border:1px solid var(--danger);color:var(--danger)}
+.acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.done h2{font-family:var(--font-head);font-weight:600;font-size:22px;margin:18px 0 6px}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<div class="bar" id="bar" hidden><div class="bar-in"><div class="bar-t" id="barT"></div><button class="btn" id="send" type="button">Отправить заявку</button></div></div>
+
+<script>
+(function(){
+  /* ВСТАВЬТЕ адрес веб-приложения Apps Script (Deploy → Web app). */
+  var API_URL="PASTE_WEB_APP_URL_HERE";
+
+  var STAFF={Cocoon:["Mar Nyein","Ju Ju","Thawatchai Phongsa"],Luna:["Mew Nge Hein","Han Shine Maung (Hank)"]};
+
+  var tg=window.Telegram&&window.Telegram.WebApp;
+  if(tg){try{tg.ready();tg.expand()}catch(e){}}
+
+  /* Сохранённый список на случай, если таблица недоступна. Основной список берётся из вкладок Cocoon / Luna Products. */
+  var mk=function(list){return list.map(function(r){return {num:r[0],name:r[1],unit:r[2]}})};
+  var COCOON=[[1,"74 PF Mince beef","kg"],[2,"74 PF Chicken cutlet for bur","pcs"],[3,"74 PF Bolognese sauce","kg"],[4,"74 PF Creamy salmon sauce","kg"],[5,"74 PF Creamy mushroom sauce","kg"],[6,"74 PF Pad Thai sauce","kg"],[7,"74 PF Sourdough bread","pcs"],[9,"74 PF Massaman curry","kg"],[10,"74 PF Red curry sauce","kg"],[11,"74 PF Hummus","kg"],[12,"74 PF Papaya salad sauce","kg"],[13,"74 PF Tomatoe salsa","kg"],[17,"74 PF Braised lamb","kg"],[18,"74 PF Caesar sauce","kg"],[20,"74 PF Tzatziki","kg"],[23,"CHICKEN ROLL FROM PRODUCTION","kg"],[24,"CHICKEN WINGS FOR COCOON FROM PRODUCTION","kg"],[25,"Falafel ","kg"],[26,"74 PF Cheese sauce","kg"],[27,"4 PF Honey musturd sauce","kg"],[28,"74 PF Potato peeling","kg"],[29,"74 PF Granola","kg"],[30,"74 PF Berries sauce","kg"],[31,"74 PF Sweet cream-cheese","kg"],[32,"74 PF Cream cheese","kg"],[33,"74 PF Truffle sauce","kg"],[34,"Big mac sauce s\\f(cocoon)","kg"],[35,"74 PF Risotto rice prep","kg"],[36,"74 PF Chicken parmigana","kg"],[37,"74 PF Chicken parmegana sauce","kg"],[38,"74 PF Octopus sous-vide 1pc 100g new","pcs"],[39,"74 PF Romesco Sauce","kg"],[40,"74 PF Ribeye beef","kg"],[41,"74 PF Peppercorn sauce","kg"],[42,"SEABASS (WHITE SNAP) 1pc 500\\600","pcs"],[43,"74 PF Tapenade salsa","kg"],[44,"Tuna fillet","kg"],[47,"74 PF Chicken breast","kg"],[48,"74 PF Mango shrimp sauce","kg"],[49,"PF seafood for tom yam","kg"],[50,"Mozzarella in breadcrumbs p/f","kg"],[51,"74 PF Blue Cheese Sauce","kg"],[52,"74 PF pickled onion shallots","kg"],[54,"74 PF Salmon fillet without skin","kg"],[55,"74 PF Tenderloin peeled","kg"],[56,"74 PF Tomato butter","kg"],[57,"74 PF Pomelo salad sauce","kg"],[58,"74 PF Baby squid peeling","kg"],[59,"potato wedges","kg"],[60,"Duck breast cocoon p/f","kg"],[63,"74 PF Cucumber smashed","kg"],[64,"74 PF Garlic sauce","kg"],[65,"burger bun","pcs"],[66,"Mayo teriyaki sauce s/f","kg"],[67,"Chili mayo sauce s/f","kg"],[68,"74 PF Apple caramel","kg"],[69,"74 PF Cramble","kg"],[70,"74 PF Peanut caramel","kg"],[71,"74 PF Brownie 1pc 163g","pcs"],[72,"chicken minced","kg"],[74,"BRIOCHE 1*5","pcs"],[75,"74 PF Truffle potato mousse","kg"],[76,"74 PF Salmon fillet","kg"],[77,"74 PF Cauliflower pure","kg"],[78,"74 PF Tom Yam Stock","kg"],[82,"mango - passon fruit for smoothie bowl p/f","kg"],[83,"BONE MARROW","kg"],[87,"Gold BBQ sauce s/f","kg"]];
+  var LUNA=[[1,"70 PF Beef broth","kg"],[2,"70 PF Fish broth","kg"],[3,"70 PF Beer batter","kg"],[4,"70 PF Brioche bun 1pc","pcs"],[5,"70 PF Brioche dough","pcs"],[6,"70 PF Milk bread street 1pc 30g","pcs"],[7,"70 PF Pasta dough","kg"],[8,"70 PF Potato crackers","kg"],[10,"70 PF Sesame chips 1ps 20g","pcs"],[11,"70 PF Tulip","pcs"],[12,"70 PF Pear jam","kg"],[13,"70 PF Tenderloin peeled","kg"],[14,"70 PF Wagyu ribeye","kg"],[15,"70 PF Wagyu striploin","kg"],[16,"70 PF Wagyu striploin A5","kg"],[18,"70 PF Baked cococnut meat","kg"],[19,"70 PF Potatoes graten","kg"],[20,"70 PF Cauliflower puree","kg"],[21,"70 PF Filling lobster ravioli","kg"],[22,"70 PF Hamachi","kg"],[23,"70 PF Octopus sous vide","kg"],[24,"70 PF Red snaper fillet","kg"],[25,"70 PF Salmon fillet on skin","kg"],[26,"70 PF Salmon fillet without skin","kg"],[27,"70 PF Scallop defrosted","kg"],[28,"70 PF Sea bass fillet","kg"],[29,"70 PF Shrimp peeling","kg"],[30,"70 PF Tuna defrosted","kg"],[31,"70 PF Asian pepper sauce","kg"],[32,"70 PF Bisque sauce","kg"],[33,"70 PF Black pepper sauce","kg"],[34,"70 PF Guacamole sauce","kg"],[35,"70 PF Hot soy sauce","kg"],[36,"70 PF Kimchi tomato sauce","kg"],[37,"70 PF Neumo sauce","kg"],[38,"70 PF Pesto sauce","kg"],[39,"70 PF Ponzu sauce","kg"],[40,"70 PF Porto sauce","kg"],[41,"70 PF Rice dressing","kg"],[42,"70 PF Roquefort sauce","kg"],[43,"70 PF Spicy mayo sauce","kg"],[44,"70 PF Spicy ponzu sauce","kg"],[45,"70 PF Tomato sauce","kg"]];
+  var CAT={Cocoon:mk(COCOON),Luna:mk(LUNA)};
+  function setIds(v){CAT[v].forEach(function(x){x.id=v.charAt(0).toLowerCase()+x.num})}
+  setIds("Cocoon");setIds("Luna");
+
+  function pad(n){return (n<10?"0":"")+n}
+  function iso(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())}
+  function tomorrow(){var d=new Date();d.setDate(d.getDate()+1);return iso(d)}
+  function dm(s){var p=s.split("-");if(p.length<3)return s;return pad(+p[2])+"."+pad(+p[1])}
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+  function fmt(q){return String(q).replace(".",",")}
+  function parseQ(s){var n=parseFloat(String(s).replace(",","."));return isFinite(n)&&n>0?Math.round(n*100)/100:0}
+  function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
+
+  function startVenue(){
+    var p="";
+    try{p=(tg&&tg.initDataUnsafe&&tg.initDataUnsafe.start_param)||""}catch(e){}
+    if(!p)p=(location.hash||"").replace("#","");
+    p=p.toLowerCase();
+    return p==="luna"?"Luna":(p==="cocoon"?"Cocoon":"");
+  }
+  var sv=startVenue();
+  var S={venue:sv||"Cocoon",locked:!!sv,qty:{Cocoon:{},Luna:{}},cooks:{Cocoon:"",Luna:""},date:tomorrow(),comment:"",q:"",only:false,done:null,busy:false,error:"",live:{Cocoon:false,Luna:false},clientId:uid()};
+  try{var d=JSON.parse(localStorage.getItem("dk-miniapp")||"null");if(d){if(d.qty)S.qty=d.qty;if(d.cooks)S.cooks=d.cooks}}catch(e){}
+  function persist(){try{localStorage.setItem("dk-miniapp",JSON.stringify({qty:S.qty,cooks:S.cooks}))}catch(e){}}
+
+  var app=document.getElementById("app"),bar=document.getElementById("bar"),barT=document.getElementById("barT"),sendBtn=document.getElementById("send");
+  function count(v){return Object.keys(S.qty[v]).length}
+  function item(id){return CAT[S.venue].filter(function(x){return x.id===id})[0]}
+
+  function loadCatalog(v){
+    if(!/^https:\/\/script\.google\.com\//.test(API_URL))return;
+    var ctl=("AbortController" in window)?new AbortController():null;
+    var timer=setTimeout(function(){if(ctl)ctl.abort()},12000);
+    fetch(API_URL+"?action=catalog&venue="+v,ctl?{signal:ctl.signal}:{}).then(function(r){return r.json()}).then(function(j){
+      clearTimeout(timer);
+      if(j&&j.ok&&j.items&&j.items.length){
+        CAT[v]=j.items;S.live[v]=true;
+        Object.keys(S.qty[v]).forEach(function(id){if(!CAT[v].some(function(x){return x.id===id}))delete S.qty[v][id]});
+        if(v===S.venue&&!S.done){renderList();renderBar()}
+      }
+    }).catch(function(){clearTimeout(timer)});
+  }
+
+  function renderMain(){
+    var v=S.venue;
+    var seg=S.locked?"":'<div class="seg" role="group" aria-label="Точка">'+["Cocoon","Luna"].map(function(n){
+      return '<button type="button" data-venue="'+n+'" aria-pressed="'+(S.venue===n)+'"><b>'+n+'</b><small>'+(count(n)?count(n)+" выбр.":"")+'</small></button>';
+    }).join("")+'</div>';
+    var fields='<div class="fields"><label class="f">На дату<input class="in" id="date" type="date" value="'+esc(S.date)+'"></label>'+
+      '<label class="f">Кто оформляет<select class="in" id="cook"><option value="">Выберите себя</option>'+
+      STAFF[v].map(function(n){return '<option'+(S.cooks[v]===n?" selected":"")+'>'+esc(n)+'</option>'}).join("")+'</select></label></div>';
+    var filters='<div class="filters"><input class="in" id="q" type="search" placeholder="Поиск по названию" value="'+esc(S.q)+'" autocomplete="off">'+
+      '<button class="chip" type="button" id="only" aria-pressed="'+S.only+'">Только выбранные</button></div>';
+    return '<h1>'+(S.locked?"Заявка · "+v:"Заявка Dark Kitchen")+'</h1><p class="sub">Полуфабрикаты от Dark Kitchen: выберите позиции и количество</p>'+
+      seg+fields+filters+'<ul class="list" id="list"></ul>'+
+      '<label class="f note">Комментарий к заявке<textarea class="in" id="comment" placeholder="Срочность, время, что учесть">'+esc(S.comment)+'</textarea></label>'+
+      (S.error?'<div class="status bad" role="alert">'+esc(S.error)+'</div>':'');
+  }
+  function rowHtml(x){
+    var cur=S.qty[S.venue][x.id]||0;
+    return '<li class="row'+(cur?" sel":"")+'" data-id="'+x.id+'"><div><div class="nm">'+esc(x.name)+'</div><div class="meta">№ '+x.num+'</div></div>'+
+      '<div class="step"><button type="button" data-act="minus" aria-label="Меньше">−</button>'+
+      '<input type="text" inputmode="decimal" data-qty value="'+(cur?fmt(cur):"")+'" placeholder="0" aria-label="Количество, '+esc(x.name)+'">'+
+      '<button type="button" data-act="plus" aria-label="Больше">+</button><span class="unit">'+esc(x.unit)+'</span></div></li>';
+  }
+  function renderList(){
+    var el=document.getElementById("list");if(!el)return;
+    var q=S.q.trim().toLowerCase(),v=S.venue;
+    var rows=CAT[v].filter(function(x){
+      if(q&&x.name.toLowerCase().indexOf(q)<0)return false;
+      if(S.only&&!S.qty[v][x.id])return false;
+      return true;
+    });
+    el.innerHTML=rows.length?rows.map(rowHtml).join(""):'<li class="empty">Ничего не найдено</li>';
+  }
+  function plural(n){return n%10===1&&n%100!==11?"позиция":(n%10>=2&&n%10<=4&&(n%100<10||n%100>=20)?"позиции":"позиций")}
+  function renderBar(){
+    if(S.done){bar.hidden=true;return}
+    var n=count(S.venue);bar.hidden=false;
+    barT.innerHTML='<b>'+n+' '+plural(n)+'</b>'+S.venue+' · на '+esc(dm(S.date))+(S.cooks[S.venue]?"":" · выберите, кто оформляет");
+    sendBtn.disabled=S.busy||!n||!S.date||!S.cooks[S.venue];
+    sendBtn.textContent=S.busy?"Отправляю…":"Отправить заявку";
+  }
+  function renderDone(){
+    var s=S.done;
+    return '<div class="done"><h1>Заявка отправлена</h1><div class="status'+(s.warn?" bad":"")+'">'+
+      (s.warn?esc(s.warn):s.duplicate?"Эта заявка уже была отправлена.":"Заявка записана в таблицу и опубликована в ветке order.")+
+      '</div><p class="sub">'+esc(s.venue)+' · на '+esc(dm(s.date))+' · '+s.count+' '+plural(s.count)+'</p>'+
+      '<div class="acts">'+(tg?'<button class="btn" id="close" type="button">Закрыть</button>':'')+'<button class="btn ghost" id="again" type="button">Новая заявка</button></div></div>';
+  }
+  function render(){
+    app.innerHTML=S.done?renderDone():renderMain();
+    if(!S.done)renderList();
+    renderBar();
+  }
+
+  function setQty(id,val){
+    var m=S.qty[S.venue];if(val>0)m[id]=val;else delete m[id];
+    persist();
+    var row=app.querySelector('.row[data-id="'+id+'"]');
+    if(row)row.classList.toggle("sel",val>0);
+    var sm=app.querySelector('[data-venue="'+S.venue+'"] small');
+    if(sm){var n=count(S.venue);sm.textContent=n?n+" выбр.":""}
+    renderBar();
+  }
+
+  app.addEventListener("click",function(e){
+    var t=e.target.closest("button");if(!t)return;
+    if(t.dataset.venue){S.venue=t.dataset.venue;S.q="";S.error="";render();if(!S.live[S.venue])loadCatalog(S.venue);return}
+    if(t.id==="only"){S.only=!S.only;render();return}
+    if(t.dataset.act){
+      var row=t.closest(".row"),id=row.dataset.id,x=item(id),inp=row.querySelector("input");
+      var cur=parseQ(inp.value),step=x.unit==="pcs"?1:0.5;
+      var nv=t.dataset.act==="plus"?Math.round((cur+step)*100)/100:Math.max(0,Math.round((cur-step)*100)/100);
+      inp.value=nv?fmt(nv):"";setQty(id,nv);return;
+    }
+    if(t.id==="close"){try{tg.close()}catch(err){}return}
+    if(t.id==="again"){S.done=null;S.q="";S.only=false;S.clientId=uid();render();window.scrollTo(0,0);return}
+  });
+  app.addEventListener("input",function(e){
+    var t=e.target;
+    if(t.hasAttribute("data-qty")){var row=t.closest(".row");setQty(row.dataset.id,parseQ(t.value));return}
+    if(t.id==="q"){S.q=t.value;renderList();return}
+    if(t.id==="comment"){S.comment=t.value;return}
+  });
+  app.addEventListener("change",function(e){
+    var t=e.target;
+    if(t.id==="date"){S.date=t.value;renderBar();return}
+    if(t.id==="cook"){S.cooks[S.venue]=t.value;persist();renderBar();return}
+    if(t.hasAttribute("data-qty")){var v=parseQ(t.value);t.value=v?fmt(v):""}
+  });
+
+  sendBtn.addEventListener("click",function(){
+    var v=S.venue;
+    var items=Object.keys(S.qty[v]).map(function(id){return {id:id,qty:S.qty[v][id]}});
+    if(!items.length||!S.date||!S.cooks[v]||S.busy)return;
+    S.busy=true;S.error="";renderBar();
+    var payload={venue:v,forDate:S.date,cook:S.cooks[v],comment:S.comment.trim(),items:items,initData:(tg&&tg.initData)||"",clientId:S.clientId};
+    var ctl=("AbortController" in window)?new AbortController():null;
+    var timer=setTimeout(function(){if(ctl)ctl.abort()},25000);
+    fetch(API_URL,{method:"POST",body:JSON.stringify(payload),signal:ctl?ctl.signal:undefined})
+      .then(function(r){return r.json()})
+      .then(function(j){
+        clearTimeout(timer);S.busy=false;
+        if(j&&j.ok){
+          S.done={venue:v,date:S.date,count:items.length,warn:j.warn||"",duplicate:!!j.duplicate};
+          S.qty[v]={};S.comment="";persist();
+          if(tg&&tg.HapticFeedback){try{tg.HapticFeedback.notificationOccurred("success")}catch(e){}}
+          render();window.scrollTo(0,0);
+        }else{S.error=(j&&j.error)||"Не удалось отправить. Нажмите кнопку ещё раз.";render()}
+      })
+      .catch(function(){
+        clearTimeout(timer);S.busy=false;
+        S.error="Нет связи. Заявка не отправлена, позиции сохранены. Нажмите кнопку ещё раз.";render();
+      });
+  });
+
+  render();
+  loadCatalog(S.venue);
+})();
+</script>
+</body>
+</html>
