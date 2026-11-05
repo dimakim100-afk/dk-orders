@@ -156,7 +156,7 @@ textarea.in{resize:vertical;min-height:64px}
   }
   function rowHtml(x){
     var cur=S.qty[S.venue][x.id]||0;
-    return '<li class="row'+(cur?" sel":"")+'" data-id="'+x.id+'"><div><div class="nm">'+esc(x.name)+'</div><div class="meta">№ '+x.num+'</div></div>'+
+    return '<li class="row'+(cur?" sel":"")+'" data-id="'+x.id+'"><div><div class="nm">'+esc(x.name)+'</div><div class="meta">'+(x.num!==""&&x.num!=null?"№ "+x.num:"")+'</div></div>'+
       '<div class="step"><button type="button" data-act="minus" aria-label="Меньше">−</button>'+
       '<input type="text" inputmode="decimal" data-qty value="'+(cur?fmt(cur):"")+'" placeholder="0" aria-label="Количество, '+esc(x.name)+'">'+
       '<button type="button" data-act="plus" aria-label="Больше">+</button><span class="unit">'+esc(x.unit)+'</span></div></li>';
