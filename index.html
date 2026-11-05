@@ -175,7 +175,7 @@ textarea.in{resize:vertical;min-height:64px}
   function renderBar(){
     if(S.done){bar.hidden=true;return}
     var n=count(S.venue);bar.hidden=false;
-    barT.innerHTML='<b>'+n+' '+plural(n)+'</b>'+S.venue+' · на '+esc(dm(S.date))+(S.cooks[S.venue]?"":" · выберите, кто оформляет");
+    barT.innerHTML=S.error?'<b style="color:#d9342b">Не отправлено</b>'+esc(S.error):'<b>'+n+' '+plural(n)+'</b>'+S.venue+' · на '+esc(dm(S.date))+(S.cooks[S.venue]?"":" · выберите, кто оформляет");
     sendBtn.disabled=S.busy||!n||!S.date||!S.cooks[S.venue];
     sendBtn.textContent=S.busy?"Отправляю…":"Отправить заявку";
   }
@@ -193,6 +193,7 @@ textarea.in{resize:vertical;min-height:64px}
   }
 
   function setQty(id,val){
+    S.error="";
     var m=S.qty[S.venue];if(val>0)m[id]=val;else delete m[id];
     persist();
     var row=app.querySelector('.row[data-id="'+id+'"]');
@@ -228,6 +229,11 @@ textarea.in{resize:vertical;min-height:64px}
     if(t.hasAttribute("data-qty")){var v=parseQ(t.value);t.value=v?fmt(v):""}
   });
 
+  function showErr(){
+    try{if(tg&&tg.showAlert){tg.showAlert(S.error);return}}catch(e){}
+    try{alert(S.error)}catch(e){}
+  }
+
   sendBtn.addEventListener("click",function(){
     var v=S.venue;
     var items=Object.keys(S.qty[v]).map(function(id){return {id:id,qty:S.qty[v][id]}});
@@ -245,11 +251,11 @@ textarea.in{resize:vertical;min-height:64px}
           S.qty[v]={};S.comment="";persist();
           if(tg&&tg.HapticFeedback){try{tg.HapticFeedback.notificationOccurred("success")}catch(e){}}
           render();window.scrollTo(0,0);
-        }else{S.error=(j&&j.error)||"Не удалось отправить. Нажмите кнопку ещё раз.";render()}
+        }else{S.error=(j&&j.error)||"Не удалось отправить. Нажмите кнопку ещё раз.";render();showErr()}
       })
-      .catch(function(){
+      .catch(function(err){
         clearTimeout(timer);S.busy=false;
-        S.error="Нет связи. Заявка не отправлена, позиции сохранены. Нажмите кнопку ещё раз.";render();
+        S.error="Нет связи ("+(err&&err.message?err.message:"ошибка")+"). Заявка не отправлена, позиции сохранены. Нажмите кнопку ещё раз.";render();showErr();
       });
   });
 
