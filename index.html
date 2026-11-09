@@ -83,12 +83,24 @@ textarea.in{resize:vertical;min-height:64px}
 .status{padding:10px 12px;border-radius:8px;background:var(--tint);margin:14px 0}
 .status.bad{background:transparent;border:1px solid var(--danger);color:var(--danger)}
 .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.addbox{display:grid;grid-template-columns:minmax(0,1fr) 84px;gap:8px;margin:14px 0 8px}
+.addbox .btn{grid-column:1/-1}
+.addbox label.chip{display:flex;align-items:center;gap:8px;grid-column:1/-1}
+.erow{display:grid;gap:8px;padding:10px;border-bottom:1px solid var(--line)}
+.erow.off{opacity:.55}
+.erow.off .in[data-ed="name"]{text-decoration:line-through}
+.erow.add{background:var(--tint)}
+.eacts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.eacts select.in{width:84px;flex:none}
+.chip.warn{border-color:var(--danger);color:var(--danger)}
 .done h2{font-family:var(--font-head);font-weight:600;font-size:22px;margin:18px 0 6px}
 </style>
 </head>
 <body>
 <div class="wrap" id="app"></div>
 <div class="bar" id="bar" hidden><div class="bar-in"><div class="bar-t" id="barT"></div><button class="btn" id="send" type="button">Send order</button></div></div>
+
+<div class="bar" id="ebar" hidden><div class="bar-in"><div class="bar-t" id="ebarT"></div><div class="acts" style="margin:0;flex-wrap:nowrap"><button class="btn ghost" id="ecancel" type="button">Cancel</button><button class="btn" id="esave" type="button">Save</button></div></div></div>
 
 <script>
 (function(){
@@ -126,7 +138,7 @@ textarea.in{resize:vertical;min-height:64px}
     return p==="luna"?"Luna":(p==="cocoon"?"Cocoon":"");
   }
   var sv=startVenue();
-  var S={venue:sv||"Cocoon",locked:!!sv,qty:{Cocoon:{},Luna:{}},cooks:{Cocoon:"",Luna:""},date:tomorrow(),comment:"",q:"",only:false,done:null,busy:false,error:"",live:{Cocoon:false,Luna:false},clientId:uid()};
+  var S={venue:sv||"Cocoon",locked:!!sv,qty:{Cocoon:{},Luna:{}},cooks:{Cocoon:"",Luna:""},date:tomorrow(),comment:"",q:"",only:false,done:null,busy:false,error:"",live:{Cocoon:false,Luna:false},clientId:uid(),admin:false,edit:false,adm:{Cocoon:null,Luna:null},ed:{},adds:[],eq:"",saving:false,edErr:"",notice:""};
   try{var d=JSON.parse(localStorage.getItem("dk-miniapp")||"null");if(d){if(d.qty)S.qty=d.qty;if(d.cooks)S.cooks=d.cooks}}catch(e){}
   function persist(){try{localStorage.setItem("dk-miniapp",JSON.stringify({qty:S.qty,cooks:S.cooks}))}catch(e){}}
 
@@ -143,7 +155,7 @@ textarea.in{resize:vertical;min-height:64px}
       if(j&&j.ok&&j.items&&j.items.length){
         CAT[v]=j.items;S.live[v]=true;
         Object.keys(S.qty[v]).forEach(function(id){if(!CAT[v].some(function(x){return x.id===id}))delete S.qty[v][id]});
-        if(v===S.venue&&!S.done){renderList();renderBar()}
+        if(v===S.venue&&!S.done&&!S.edit){renderList();renderBar()}
       }
     }).catch(function(){clearTimeout(timer)});
   }
@@ -157,9 +169,9 @@ textarea.in{resize:vertical;min-height:64px}
       '<label class="f">Ordered by<select class="in" id="cook"><option value="">Select your name</option>'+
       STAFF[v].map(function(n){return '<option'+(S.cooks[v]===n?" selected":"")+'>'+esc(n)+'</option>'}).join("")+'</select></label></div>';
     var filters='<div class="filters"><input class="in" id="q" type="search" placeholder="Search by name" value="'+esc(S.q)+'" autocomplete="off">'+
-      '<button class="chip" type="button" id="only" aria-pressed="'+S.only+'">Selected only</button></div>';
+      '<button class="chip" type="button" id="only" aria-pressed="'+S.only+'">Selected only</button>'+(S.admin?'<button class="chip" type="button" id="editBtn">Edit list</button>':'')+'</div>';
     return '<h1>'+(S.locked?"Order · "+v:"Dark Kitchen order")+'</h1><p class="sub">Semi-finished products from Dark Kitchen: choose items and quantities</p>'+
-      seg+fields+filters+'<ul class="list" id="list"></ul>'+
+      (S.notice?'<div class="status" role="status">'+esc(S.notice)+'</div>':'')+seg+fields+filters+'<ul class="list" id="list"></ul>'+
       '<label class="f note">Order comment<textarea class="in" id="comment" placeholder="Urgency, time, anything to note">'+esc(S.comment)+'</textarea></label>'+
       (S.error?'<div class="status bad" role="alert">'+esc(S.error)+'</div>':'');
   }
@@ -186,7 +198,7 @@ textarea.in{resize:vertical;min-height:64px}
   }
   function plural(n){return n===1?"item":"items"}
   function renderBar(){
-    if(S.done){bar.hidden=true;return}
+    if(S.done||S.edit){bar.hidden=true;return}
     var n=count(S.venue);bar.hidden=false;
     barT.innerHTML=S.error?'<b style="color:#d9342b">Not sent</b>'+esc(S.error):'<b>'+n+' '+plural(n)+'</b>'+S.venue+' · for '+esc(dm(S.date))+(S.cooks[S.venue]?"":" · select who is ordering");
     sendBtn.disabled=S.busy||!n||!S.date||!S.cooks[S.venue];
@@ -200,9 +212,111 @@ textarea.in{resize:vertical;min-height:64px}
       '<div class="acts">'+(tg?'<button class="btn" id="close" type="button">Close</button>':'')+'<button class="btn ghost" id="again" type="button">New order</button></div></div>';
   }
   function render(){
+    if(S.edit){app.innerHTML=renderEdit();renderEList();renderBar();renderEBar();return}
+    ebar.hidden=true;
     app.innerHTML=S.done?renderDone():renderMain();
     if(!S.done)renderList();
     renderBar();
+  }
+
+  /* ---------- редактор ассортимента (только для админа) ---------- */
+  var ebar=document.getElementById("ebar"),ebarT=document.getElementById("ebarT"),esaveBtn=document.getElementById("esave");
+  function post(payload,tries,ms){
+    var n=0;
+    function go(){
+      n++;
+      var ctl=("AbortController" in window)?new AbortController():null;
+      var t=setTimeout(function(){if(ctl)ctl.abort()},ms);
+      return fetch(API_URL,{method:"POST",body:JSON.stringify(payload),signal:ctl?ctl.signal:undefined})
+        .then(function(r){clearTimeout(t);return r.json()})
+        .catch(function(e){clearTimeout(t);if(n<tries)return go();throw e});
+    }
+    return go();
+  }
+  function checkAdmin(){
+    if(!tg||!tg.initData)return;
+    post({action:"catalog_admin",venue:S.venue,initData:tg.initData},1,20000).then(function(j){
+      if(j&&j.ok){S.admin=true;S.adm[S.venue]=j.items;if(!S.edit&&!S.done&&!S.busy)render()}
+    }).catch(function(){});
+  }
+  function loadAdm(v){
+    post({action:"catalog_admin",venue:v,initData:(tg&&tg.initData)||""},2,20000).then(function(j){
+      if(j&&j.ok){S.adm[v]=j.items;if(S.edit&&S.venue===v)renderEList()}
+      else{S.edErr=(j&&j.error)||"Could not load the list";renderEBar()}
+    }).catch(function(){S.edErr="No connection. Close and try again.";renderEBar()});
+  }
+  function eff(x){
+    var e=S.ed[x.id]||{};
+    return {name:e.name!=null?e.name:x.name,unit:e.unit||x.unit,stage:e.stage!=null?!!e.stage:!!x.stage,hidden:e.hidden!=null?!!e.hidden:!!x.hidden};
+  }
+  function setEd(id,k,val){var e=S.ed[id]||(S.ed[id]={});e[k]=val;renderEBar()}
+  function buildChanges(){
+    var v=S.venue,out=[],orig={};
+    (S.adm[v]||[]).forEach(function(x){orig[x.id]=x});
+    Object.keys(S.ed).forEach(function(id){
+      var o=orig[id],e=S.ed[id];if(!o)return;
+      if(e.hidden!=null&&!!e.hidden!==!!o.hidden)out.push({op:e.hidden?"hide":"restore",id:id});
+      var nm=e.name!=null?String(e.name).trim():o.name.trim(),un=e.unit||o.unit,st=e.stage!=null?!!e.stage:!!o.stage;
+      if((nm&&nm!==o.name.trim())||un!==o.unit||(v==="Cocoon"&&st!==!!o.stage))out.push({op:"update",id:id,name:nm,unit:un,stage:st?1:0});
+    });
+    S.adds.forEach(function(a){out.push({op:"add",name:a.name,unit:a.unit,stage:a.stage?1:0})});
+    return out;
+  }
+  function unitOpts(u){return ["kg","pcs","l"].map(function(x){return '<option'+(x===u?" selected":"")+'>'+x+'</option>'}).join("")}
+  function renderEdit(){
+    var v=S.venue;
+    return '<h1>Edit list · '+v+'</h1><p class="sub">Changes are saved to the sheet and announced in the group thread.</p>'+
+      '<div class="addbox"><input class="in" id="addName" type="text" placeholder="New item name" autocomplete="off"><select class="in" id="addUnit">'+unitOpts("kg")+'</select>'+
+      (v==="Cocoon"?'<label class="chip"><input type="checkbox" id="addStage"> Stage 1</label>':'')+
+      '<button class="btn" type="button" id="addBtn">Add item</button></div>'+
+      '<ul class="list" id="eadds"></ul>'+
+      '<div class="filters"><input class="in" id="eq" type="search" placeholder="Search by name" value="'+esc(S.eq)+'" autocomplete="off"></div>'+
+      '<ul class="list" id="elist"></ul>';
+  }
+  function renderEList(){
+    var el=document.getElementById("elist"),ad=document.getElementById("eadds");if(!el)return;
+    var v=S.venue;
+    ad.innerHTML=S.adds.map(function(a,i){
+      return '<li class="erow add"><div class="nm">+ '+esc(a.name)+' <span class="meta">'+esc(a.unit)+(a.stage?" · Stage 1":"")+' · new</span></div><div class="eacts"><button class="chip warn" type="button" data-adel="'+i+'">Cancel</button></div></li>';
+    }).join("");
+    var items=S.adm[v];
+    if(!items){el.innerHTML='<li class="empty">Loading…</li>';return}
+    var q=S.eq.trim().toLowerCase();
+    var rows=items.filter(function(x){return !q||x.name.toLowerCase().indexOf(q)>=0});
+    if(!rows.length){el.innerHTML='<li class="empty">Nothing found</li>';return}
+    el.innerHTML=rows.map(function(x){
+      var f=eff(x);
+      return '<li class="erow'+(f.hidden?" off":"")+'" data-id="'+x.id+'"><input class="in" type="text" data-ed="name" value="'+esc(f.name)+'" aria-label="Name">'+
+        '<div class="eacts"><select class="in" data-ed="unit" aria-label="Unit">'+unitOpts(f.unit)+'</select>'+
+        (v==="Cocoon"?'<button class="chip" type="button" data-ed="stage" aria-pressed="'+f.stage+'">★ Stage 1</button>':"")+
+        '<button class="chip'+(f.hidden?"":" warn")+'" type="button" data-ed="hide">'+(f.hidden?"Restore":"Remove")+'</button>'+
+        (f.hidden?'<span class="meta">not in the order list</span>':"")+'</div></li>';
+    }).join("");
+  }
+  function renderEBar(){
+    if(!S.edit){ebar.hidden=true;return}
+    var n=buildChanges().length;ebar.hidden=false;
+    ebarT.innerHTML=S.edErr?'<b style="color:#d9342b">Not saved</b>'+esc(S.edErr):'<b>'+n+' change'+(n===1?"":"s")+'</b>'+S.venue+' · will be announced in the group';
+    esaveBtn.disabled=S.saving||!n;esaveBtn.textContent=S.saving?"Saving…":"Save";
+    document.getElementById("ecancel").disabled=S.saving;
+  }
+  function startEdit(){
+    S.edit=true;S.ed={};S.adds=[];S.eq="";S.edErr="";S.notice="";
+    render();window.scrollTo(0,0);
+    loadAdm(S.venue);
+  }
+  function saveEdit(){
+    var ch=buildChanges();if(!ch.length||S.saving)return;
+    var v=S.venue;S.saving=true;S.edErr="";renderEBar();
+    post({action:"catalog_save",venue:v,initData:(tg&&tg.initData)||"",changes:ch},3,30000).then(function(j){
+      S.saving=false;
+      if(j&&j.ok){
+        S.adm[v]=j.items;CAT[v]=j.items.filter(function(x){return !x.hidden});S.live[v]=true;
+        Object.keys(S.qty[v]).forEach(function(id){if(!CAT[v].some(function(x){return x.id===id}))delete S.qty[v][id]});persist();
+        S.edit=false;S.notice=(j.changed?"List saved and announced in the group.":"No changes were needed.")+(j.warn?" "+j.warn:"");
+        render();window.scrollTo(0,0);
+      }else{S.edErr=(j&&j.error)||"Could not save. Try again.";renderEBar()}
+    }).catch(function(err){S.saving=false;S.edErr="No connection ("+(err&&err.message?err.message:"error")+"). Press Save again.";renderEBar()});
   }
 
   function setQty(id,val){
@@ -241,6 +355,22 @@ textarea.in{resize:vertical;min-height:64px}
     var t=e.target.closest("button");if(!t)return;
     if(t.dataset.venue){S.venue=t.dataset.venue;S.q="";S.error="";render();if(!S.live[S.venue])loadCatalog(S.venue);return}
     if(t.id==="only"){S.only=!S.only;render();return}
+    if(t.id==="editBtn"){startEdit();return}
+    if(t.id==="ecancel"){if(!S.saving){S.edit=false;S.ed={};S.adds=[];render()}return}
+    if(t.id==="addBtn"){
+      var an=document.getElementById("addName"),nm=an.value.replace(/\s+/g," ").trim();
+      if(!nm){an.focus();return}
+      var st=document.getElementById("addStage");
+      S.adds.push({name:nm,unit:document.getElementById("addUnit").value,stage:!!(st&&st.checked)});
+      an.value="";if(st)st.checked=false;renderEList();renderEBar();return;
+    }
+    if(t.hasAttribute("data-adel")){S.adds.splice(+t.getAttribute("data-adel"),1);renderEList();renderEBar();return}
+    if(t.dataset.ed==="stage"||t.dataset.ed==="hide"){
+      var rw=t.closest(".erow"),ex=(S.adm[S.venue]||[]).filter(function(x){return x.id===rw.dataset.id})[0];
+      if(!ex)return;var f=eff(ex);
+      if(t.dataset.ed==="stage")setEd(ex.id,"stage",!f.stage);else setEd(ex.id,"hidden",!f.hidden);
+      renderEList();return;
+    }
     if(t.dataset.act){if(e.detail===0)stepBtn(t);return}
     if(t.id==="close"){try{tg.close()}catch(err){}return}
     if(t.id==="again"){S.done=null;S.q="";S.only=false;S.clientId=uid();render();window.scrollTo(0,0);return}
@@ -250,10 +380,13 @@ textarea.in{resize:vertical;min-height:64px}
     if(t.hasAttribute("data-qty")){var row=t.closest(".row");setQty(row.dataset.id,parseQ(t.value));return}
     if(t.id==="q"){S.q=t.value;renderList();return}
     if(t.id==="comment"){S.comment=t.value;return}
+    if(t.id==="eq"){S.eq=t.value;renderEList();return}
+    if(t.dataset&&t.dataset.ed==="name"){var r1=t.closest(".erow");setEd(r1.dataset.id,"name",t.value);return}
   });
   app.addEventListener("change",function(e){
     var t=e.target;
     if(t.id==="date"){S.date=t.value;renderBar();return}
+    if(t.dataset&&t.dataset.ed==="unit"){var r2=t.closest(".erow");setEd(r2.dataset.id,"unit",t.value);return}
     if(t.id==="cook"){S.cooks[S.venue]=t.value;persist();renderBar();return}
     if(t.hasAttribute("data-qty")){var v=parseQ(t.value);t.value=v?fmt(v):""}
   });
@@ -294,8 +427,11 @@ textarea.in{resize:vertical;min-height:64px}
       });
   });
 
+  esaveBtn.addEventListener("click",saveEdit);
+  document.getElementById("ecancel").addEventListener("click",function(){if(!S.saving){S.edit=false;S.ed={};S.adds=[];render()}});
   render();
   loadCatalog(S.venue);
+  checkAdmin();
 })();
 </script>
 </body>
