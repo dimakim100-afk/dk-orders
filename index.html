@@ -360,7 +360,7 @@ textarea.in{resize:vertical;min-height:64px}
   function stepBtn(t){
     var row=t.closest(".row");if(!row)return;
     var id=row.dataset.id,x=item(id),inp=row.querySelector("input");
-    var cur=parseQ(inp.value),step=x.unit==="pcs"?1:0.5;
+    var cur=parseQ(inp.value),step=x.unit==="pcs"?1:0.1;
     var nv=t.dataset.act==="plus"?Math.round((cur+step)*100)/100:Math.max(0,Math.round((cur-step)*100)/100);
     inp.value=nv?fmt(nv):"";setQty(id,nv);
   }
