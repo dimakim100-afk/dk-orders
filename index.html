@@ -80,6 +80,7 @@ textarea.in{resize:vertical;min-height:64px}
 .row.nw.sel{background:#E3D3FA}
 .sec.nw{background:#E3D3FA;color:#3B1A78;border-radius:8px;margin-top:10px}
 @media (prefers-color-scheme: dark){.row.nw{background:#231A38}.row.nw.sel{background:#3A2A5C}.sec.nw{background:#3A2A5C;color:#D9C6FF}}
+.ver{color:var(--muted);font-size:11px;text-align:center;margin:18px 0 0}
 .empty{color:var(--muted);padding:24px 10px;text-align:center}
 .note{margin:14px 0 0}
 .bar{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);
@@ -187,7 +188,7 @@ textarea.in{resize:vertical;min-height:64px}
     return '<h1>'+(S.locked?"Order · "+v:"Dark Kitchen order")+'</h1><p class="sub">Semi-finished products from Dark Kitchen: choose items and quantities</p>'+
       (S.notice?'<div class="status" role="status">'+esc(S.notice)+'</div>':'')+seg+fields+tabsHtml()+filters+'<ul class="list" id="list"></ul>'+
       '<label class="f note">Order comment<textarea class="in" id="comment" placeholder="Urgency, time, anything to note">'+esc(S.comment)+'</textarea></label>'+
-      (S.error?'<div class="status bad" role="alert">'+esc(S.error)+'</div>':'');
+      (S.error?'<div class="status bad" role="alert">'+esc(S.error)+'</div>':'')+'<p class="ver">v2026.11.19-c · step kg 0,1</p>';
   }
   function tabsHtml(){
     var v=S.venue;if(!hasNew(v))return "";
