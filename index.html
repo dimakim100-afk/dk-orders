@@ -161,19 +161,34 @@ textarea.in{resize:vertical;min-height:64px}
   function count(v){return Object.keys(S.qty[v]).length}
   function item(id){return CAT[S.venue].filter(function(x){return x.id===id})[0]}
 
-  function loadCatalog(v){
+  function loadCatalog(v,n){
+    n=n||0;
     if(!/^https:\/\/script\.google\.com\//.test(API_URL))return;
+    S.loading=S.loading||{};S.loading[v]=true;
     var ctl=("AbortController" in window)?new AbortController():null;
-    var timer=setTimeout(function(){if(ctl)ctl.abort()},12000);
-    fetch(API_URL+"?action=catalog&venue="+v,ctl?{signal:ctl.signal}:{}).then(function(r){return r.json()}).then(function(j){
+    var timer=setTimeout(function(){if(ctl)ctl.abort()},25000);
+    fetch(API_URL+"?action=catalog&venue="+v+"&_="+Date.now(),ctl?{signal:ctl.signal}:{}).then(function(r){return r.json()}).then(function(j){
       clearTimeout(timer);
       if(j&&j.ok&&j.items&&j.items.length){
+        S.loading[v]=false;
         CAT[v]=j.items;S.live[v]=true;
+        try{localStorage.setItem("dk-cat-"+v,JSON.stringify(j.items))}catch(e){}
         Object.keys(S.qty[v]).forEach(function(id){if(!CAT[v].some(function(x){return x.id===id}))delete S.qty[v][id]});
         if(v===S.venue&&!S.done&&!S.edit){var ae=document.activeElement;if(ae&&ae.id==='q'){renderList();renderBar()}else render()}
-      }
-    }).catch(function(){clearTimeout(timer)});
+      }else throw new Error("empty");
+    }).catch(function(){
+      clearTimeout(timer);
+      if(n<2){setTimeout(function(){loadCatalog(v,n+1)},1500);return}
+      S.loading[v]=false;S.failed=S.failed||{};S.failed[v]=true;
+      if(v===S.venue&&!S.done&&!S.edit)render();
+    });
   }
+  function catBanner(){
+    var v=S.venue;if(S.live[v])return"";
+    if(!(S.failed&&S.failed[v]))return'<div class="status" role="status">Loading the latest list…</div>';
+    return'<div class="status bad" role="alert">Could not load the latest list — this may be outdated. <button class="chip" type="button" id="reload">Retry</button></div>';
+  }
+  try{["Cocoon","Luna"].forEach(function(v){var c=JSON.parse(localStorage.getItem("dk-cat-"+v)||"null");if(c&&c.length)CAT[v]=c})}catch(e){}
 
   function renderMain(){
     var v=S.venue;
@@ -186,9 +201,9 @@ textarea.in{resize:vertical;min-height:64px}
     var filters='<div class="filters"><input class="in" id="q" type="search" placeholder="Search by name" value="'+esc(S.q)+'" autocomplete="off">'+
       '<button class="chip" type="button" id="only" aria-pressed="'+S.only+'">Selected only</button>'+(S.admin?'<button class="chip" type="button" id="editBtn">Edit list</button>':'')+'</div>';
     return '<h1>'+(S.locked?"Order · "+v:"Dark Kitchen order")+'</h1><p class="sub">Semi-finished products from Dark Kitchen: choose items and quantities</p>'+
-      (S.notice?'<div class="status" role="status">'+esc(S.notice)+'</div>':'')+seg+fields+tabsHtml()+filters+'<ul class="list" id="list"></ul>'+
+      (S.notice?'<div class="status" role="status">'+esc(S.notice)+'</div>':'')+catBanner()+seg+fields+tabsHtml()+filters+'<ul class="list" id="list"></ul>'+
       '<label class="f note">Order comment<textarea class="in" id="comment" placeholder="Urgency, time, anything to note">'+esc(S.comment)+'</textarea></label>'+
-      (S.error?'<div class="status bad" role="alert">'+esc(S.error)+'</div>':'')+'<p class="ver">v2026.11.19-c · step kg 0,1</p>';
+      (S.error?'<div class="status bad" role="alert">'+esc(S.error)+'</div>':'')+'<p class="ver">v2026.11.19-d</p>';
   }
   function tabsHtml(){
     var v=S.venue;if(!hasNew(v))return "";
@@ -383,6 +398,7 @@ textarea.in{resize:vertical;min-height:64px}
     var t=e.target.closest("button");if(!t)return;
     if(t.dataset.venue){S.venue=t.dataset.venue;S.tab="cur";S.q="";S.error="";render();if(!S.live[S.venue])loadCatalog(S.venue);return}
     if(t.dataset.tab){S.tab=t.dataset.tab;S.q="";render();return}
+    if(t.id==="reload"){S.failed={};render();loadCatalog(S.venue);return}
     if(t.id==="only"){S.only=!S.only;render();return}
     if(t.id==="editBtn"){startEdit();return}
     if(t.id==="ecancel"){if(!S.saving){S.edit=false;S.ed={};S.adds=[];render()}return}
