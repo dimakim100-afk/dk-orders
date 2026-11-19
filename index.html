@@ -69,6 +69,17 @@ textarea.in{resize:vertical;min-height:64px}
 .row.s1.sel{background:#FFE7B0}
 .tag1{display:inline-block;background:#E69A1A;color:#2B1A00;border-radius:4px;padding:0 6px;font-size:11px;font-weight:600;margin-left:6px;vertical-align:1px}
 @media (prefers-color-scheme: dark){.sec.s1{background:#4A3410;color:#FFD98A}.sec.s1 small{color:#E6BD6E}.row.s1{background:#2A2210;border-left-color:#E69A1A}.row.s1.sel{background:#4A3410}}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 6px}
+.tabs button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:600}
+.tabs button small{font-family:var(--font-num);font-weight:400;font-size:12px;opacity:.85}
+.tabs button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.tabs button.nw[aria-pressed="true"]{background:#7B3FE4;border-color:#7B3FE4;color:#fff}
+.tabs button.nw{border-color:#7B3FE4}
+.tagn{display:inline-block;background:#7B3FE4;color:#fff;border-radius:4px;padding:0 6px;font-size:11px;font-weight:600;margin-left:6px;vertical-align:1px}
+.row.nw{border-left:4px solid #7B3FE4;background:#F3ECFD}
+.row.nw.sel{background:#E3D3FA}
+.sec.nw{background:#E3D3FA;color:#3B1A78;border-radius:8px;margin-top:10px}
+@media (prefers-color-scheme: dark){.row.nw{background:#231A38}.row.nw.sel{background:#3A2A5C}.sec.nw{background:#3A2A5C;color:#D9C6FF}}
 .empty{color:var(--muted);padding:24px 10px;text-align:center}
 .note{margin:14px 0 0}
 .bar{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);
@@ -138,11 +149,14 @@ textarea.in{resize:vertical;min-height:64px}
     return p==="luna"?"Luna":(p==="cocoon"?"Cocoon":"");
   }
   var sv=startVenue();
-  var S={venue:sv||"Cocoon",locked:!!sv,qty:{Cocoon:{},Luna:{}},cooks:{Cocoon:"",Luna:""},date:tomorrow(),comment:"",q:"",only:false,done:null,busy:false,error:"",live:{Cocoon:false,Luna:false},clientId:uid(),admin:false,edit:false,adm:{Cocoon:null,Luna:null},ed:{},adds:[],eq:"",saving:false,edErr:"",notice:""};
+  var S={venue:sv||"Cocoon",locked:!!sv,qty:{Cocoon:{},Luna:{}},cooks:{Cocoon:"",Luna:""},date:tomorrow(),comment:"",q:"",only:false,done:null,busy:false,error:"",live:{Cocoon:false,Luna:false},clientId:uid(),tab:"cur",admin:false,edit:false,adm:{Cocoon:null,Luna:null},ed:{},adds:[],eq:"",saving:false,edErr:"",notice:""};
   try{var d=JSON.parse(localStorage.getItem("dk-miniapp")||"null");if(d){if(d.qty)S.qty=d.qty;if(d.cooks)S.cooks=d.cooks}}catch(e){}
   function persist(){try{localStorage.setItem("dk-miniapp",JSON.stringify({qty:S.qty,cooks:S.cooks}))}catch(e){}}
 
   var app=document.getElementById("app"),bar=document.getElementById("bar"),barT=document.getElementById("barT"),sendBtn=document.getElementById("send");
+  function inTab(x,t){return t==="new"?!!x.newMenu:x.newMenu!=="new"}
+  function hasNew(v){return CAT[v].some(function(x){return !!x.newMenu})}
+  function tabCount(v,t){return CAT[v].filter(function(x){return inTab(x,t)&&S.qty[v][x.id]}).length}
   function count(v){return Object.keys(S.qty[v]).length}
   function item(id){return CAT[S.venue].filter(function(x){return x.id===id})[0]}
 
@@ -155,7 +169,7 @@ textarea.in{resize:vertical;min-height:64px}
       if(j&&j.ok&&j.items&&j.items.length){
         CAT[v]=j.items;S.live[v]=true;
         Object.keys(S.qty[v]).forEach(function(id){if(!CAT[v].some(function(x){return x.id===id}))delete S.qty[v][id]});
-        if(v===S.venue&&!S.done&&!S.edit){renderList();renderBar()}
+        if(v===S.venue&&!S.done&&!S.edit){var ae=document.activeElement;if(ae&&ae.id==='q'){renderList();renderBar()}else render()}
       }
     }).catch(function(){clearTimeout(timer)});
   }
@@ -171,13 +185,21 @@ textarea.in{resize:vertical;min-height:64px}
     var filters='<div class="filters"><input class="in" id="q" type="search" placeholder="Search by name" value="'+esc(S.q)+'" autocomplete="off">'+
       '<button class="chip" type="button" id="only" aria-pressed="'+S.only+'">Selected only</button>'+(S.admin?'<button class="chip" type="button" id="editBtn">Edit list</button>':'')+'</div>';
     return '<h1>'+(S.locked?"Order · "+v:"Dark Kitchen order")+'</h1><p class="sub">Semi-finished products from Dark Kitchen: choose items and quantities</p>'+
-      (S.notice?'<div class="status" role="status">'+esc(S.notice)+'</div>':'')+seg+fields+filters+'<ul class="list" id="list"></ul>'+
+      (S.notice?'<div class="status" role="status">'+esc(S.notice)+'</div>':'')+seg+fields+tabsHtml()+filters+'<ul class="list" id="list"></ul>'+
       '<label class="f note">Order comment<textarea class="in" id="comment" placeholder="Urgency, time, anything to note">'+esc(S.comment)+'</textarea></label>'+
       (S.error?'<div class="status bad" role="alert">'+esc(S.error)+'</div>':'');
   }
+  function tabsHtml(){
+    var v=S.venue;if(!hasNew(v))return "";
+    var nc=CAT[v].filter(function(x){return inTab(x,"new")}).length,cc=CAT[v].filter(function(x){return inTab(x,"cur")}).length;
+    function lab(t,n,sel){return sel?(sel+" selected"):n+" items"}
+    return '<div class="tabs" role="group" aria-label="Menu">'+
+      '<button type="button" data-tab="cur" aria-pressed="'+(S.tab==="cur")+'"><span>Current</span><small>'+(tabCount(v,"cur")?tabCount(v,"cur")+" selected":cc+" items")+'</small></button>'+
+      '<button type="button" class="nw" data-tab="new" aria-pressed="'+(S.tab==="new")+'"><span>🆕 New menu</span><small>'+(tabCount(v,"new")?tabCount(v,"new")+" selected":nc+" items")+'</small></button></div>';
+  }
   function rowHtml(x){
     var cur=S.qty[S.venue][x.id]||0;
-    return '<li class="row'+(x.stage?" s1":"")+(cur?" sel":"")+'" data-id="'+x.id+'"><div><div class="nm">'+esc(x.name)+(x.stage?'<span class="tag1">Stage 1</span>':'')+'</div><div class="meta">'+(x.num!==""&&x.num!=null?"#"+x.num:"")+'</div></div>'+
+    return '<li class="row'+(S.tab==="new"&&hasNew(S.venue)?" nw":(x.stage?" s1":""))+(cur?" sel":"")+'" data-id="'+x.id+'"><div><div class="nm">'+esc(x.name)+(S.tab==="new"&&hasNew(S.venue)?'<span class="tagn">NEW</span>':(x.stage?'<span class="tag1">Stage 1</span>':''))+'</div><div class="meta">'+(x.num!==""&&x.num!=null?"#"+x.num:"")+'</div></div>'+
       '<div class="step"><button type="button" data-act="minus" aria-label="Less">−</button>'+
       '<input type="text" inputmode="decimal" data-qty value="'+(cur?fmt(cur):"")+'" placeholder="0" aria-label="Quantity, '+esc(x.name)+'">'+
       '<button type="button" data-act="plus" aria-label="More">+</button><span class="unit">'+esc(x.unit)+'</span></div></li>';
@@ -185,12 +207,15 @@ textarea.in{resize:vertical;min-height:64px}
   function renderList(){
     var el=document.getElementById("list");if(!el)return;
     var q=S.q.trim().toLowerCase(),v=S.venue;
+    var nt=hasNew(v)&&S.tab==="new";
     var rows=CAT[v].filter(function(x){
+      if(hasNew(v)&&!inTab(x,nt?"new":"cur"))return false;
       if(q&&x.name.toLowerCase().indexOf(q)<0)return false;
       if(S.only&&!S.qty[v][x.id])return false;
       return true;
     });
     if(!rows.length){el.innerHTML='<li class="empty">Nothing found</li>';return}
+    if(nt){el.innerHTML='<li class="sec nw">🆕 New menu <small>'+rows.length+' items</small></li>'+rows.map(rowHtml).join("");return}
     var s1=rows.filter(function(x){return x.stage}),rest=rows.filter(function(x){return !x.stage});
     if(!s1.length){el.innerHTML=rows.map(rowHtml).join("");return}
     el.innerHTML='<li class="sec s1">Stage 1 <small>'+s1.length+' items · launch 15.07</small></li>'+s1.map(rowHtml).join("")+
@@ -247,7 +272,7 @@ textarea.in{resize:vertical;min-height:64px}
   }
   function eff(x){
     var e=S.ed[x.id]||{};
-    return {name:e.name!=null?e.name:x.name,unit:e.unit||x.unit,stage:e.stage!=null?!!e.stage:!!x.stage,hidden:e.hidden!=null?!!e.hidden:!!x.hidden};
+    return {name:e.name!=null?e.name:x.name,unit:e.unit||x.unit,stage:e.stage!=null?!!e.stage:!!x.stage,hidden:e.hidden!=null?!!e.hidden:!!x.hidden,newMenu:e.newMenu!=null?e.newMenu:(x.newMenu||"")};
   }
   function setEd(id,k,val){var e=S.ed[id]||(S.ed[id]={});e[k]=val;renderEBar()}
   function buildChanges(){
@@ -257,9 +282,10 @@ textarea.in{resize:vertical;min-height:64px}
       var o=orig[id],e=S.ed[id];if(!o)return;
       if(e.hidden!=null&&!!e.hidden!==!!o.hidden)out.push({op:e.hidden?"hide":"restore",id:id});
       var nm=e.name!=null?String(e.name).trim():o.name.trim(),un=e.unit||o.unit,st=e.stage!=null?!!e.stage:!!o.stage;
-      if((nm&&nm!==o.name.trim())||un!==o.unit||(v==="Cocoon"&&st!==!!o.stage))out.push({op:"update",id:id,name:nm,unit:un,stage:st?1:0});
+      var nmu=e.newMenu!=null?e.newMenu:(o.newMenu||"");
+      if((nm&&nm!==o.name.trim())||un!==o.unit||(v==="Cocoon"&&st!==!!o.stage)||(v==="Cocoon"&&nmu!==(o.newMenu||"")))out.push({op:"update",id:id,name:nm,unit:un,stage:st?1:0,newMenu:nmu});
     });
-    S.adds.forEach(function(a){out.push({op:"add",name:a.name,unit:a.unit,stage:a.stage?1:0})});
+    S.adds.forEach(function(a){out.push({op:"add",name:a.name,unit:a.unit,stage:a.stage?1:0,newMenu:a.newMenu?"new":""})});
     return out;
   }
   function unitOpts(u){return ["kg","pcs","l"].map(function(x){return '<option'+(x===u?" selected":"")+'>'+x+'</option>'}).join("")}
@@ -267,7 +293,7 @@ textarea.in{resize:vertical;min-height:64px}
     var v=S.venue;
     return '<h1>Edit list · '+v+'</h1><p class="sub">Changes are saved to the sheet and announced in the group thread.</p>'+
       '<div class="addbox"><input class="in" id="addName" type="text" placeholder="New item name" autocomplete="off"><select class="in" id="addUnit">'+unitOpts("kg")+'</select>'+
-      (v==="Cocoon"?'<label class="chip"><input type="checkbox" id="addStage"> Stage 1</label>':'')+
+      (v==="Cocoon"?'<label class="chip"><input type="checkbox" id="addStage"> Stage 1</label><label class="chip"><input type="checkbox" id="addNew"'+(S.tab==="new"?" checked":"")+'> 🆕 New menu</label>':'')+
       '<button class="btn" type="button" id="addBtn">Add item</button></div>'+
       '<ul class="list" id="eadds"></ul>'+
       '<div class="filters"><input class="in" id="eq" type="search" placeholder="Search by name" value="'+esc(S.eq)+'" autocomplete="off"></div>'+
@@ -277,7 +303,7 @@ textarea.in{resize:vertical;min-height:64px}
     var el=document.getElementById("elist"),ad=document.getElementById("eadds");if(!el)return;
     var v=S.venue;
     ad.innerHTML=S.adds.map(function(a,i){
-      return '<li class="erow add"><div class="nm">+ '+esc(a.name)+' <span class="meta">'+esc(a.unit)+(a.stage?" · Stage 1":"")+' · new</span></div><div class="eacts"><button class="chip warn" type="button" data-adel="'+i+'">Cancel</button></div></li>';
+      return '<li class="erow add"><div class="nm">+ '+esc(a.name)+' <span class="meta">'+esc(a.unit)+(a.stage?" · Stage 1":"")+(a.newMenu?" · New menu":"")+' · new</span></div><div class="eacts"><button class="chip warn" type="button" data-adel="'+i+'">Cancel</button></div></li>';
     }).join("");
     var items=S.adm[v];
     if(!items){el.innerHTML='<li class="empty">Loading…</li>';return}
@@ -288,7 +314,7 @@ textarea.in{resize:vertical;min-height:64px}
       var f=eff(x);
       return '<li class="erow'+(f.hidden?" off":"")+'" data-id="'+x.id+'"><input class="in" type="text" data-ed="name" value="'+esc(f.name)+'" aria-label="Name">'+
         '<div class="eacts"><select class="in" data-ed="unit" aria-label="Unit">'+unitOpts(f.unit)+'</select>'+
-        (v==="Cocoon"?'<button class="chip" type="button" data-ed="stage" aria-pressed="'+f.stage+'">★ Stage 1</button>':"")+
+        (v==="Cocoon"?'<button class="chip" type="button" data-ed="stage" aria-pressed="'+f.stage+'">★ Stage 1</button><button class="chip" type="button" data-ed="nm" aria-pressed="'+(!!f.newMenu)+'">'+(f.newMenu==="both"?"🆕 New + Current":f.newMenu?"🆕 New menu":"Current")+'</button>':"")+
         '<button class="chip'+(f.hidden?"":" warn")+'" type="button" data-ed="hide">'+(f.hidden?"Restore":"Remove")+'</button>'+
         (f.hidden?'<span class="meta">not in the order list</span>':"")+'</div></li>';
     }).join("");
@@ -327,6 +353,7 @@ textarea.in{resize:vertical;min-height:64px}
     if(row)row.classList.toggle("sel",val>0);
     var sm=app.querySelector('[data-venue="'+S.venue+'"] small');
     if(sm){var n=count(S.venue);sm.textContent=n?n+" selected":""}
+    var tb=app.querySelector(".tabs");if(tb){var tw=document.createElement("div");tw.innerHTML=tabsHtml();tb.innerHTML=tw.firstChild.innerHTML}
     renderBar();
   }
 
@@ -353,22 +380,23 @@ textarea.in{resize:vertical;min-height:64px}
 
   app.addEventListener("click",function(e){
     var t=e.target.closest("button");if(!t)return;
-    if(t.dataset.venue){S.venue=t.dataset.venue;S.q="";S.error="";render();if(!S.live[S.venue])loadCatalog(S.venue);return}
+    if(t.dataset.venue){S.venue=t.dataset.venue;S.tab="cur";S.q="";S.error="";render();if(!S.live[S.venue])loadCatalog(S.venue);return}
+    if(t.dataset.tab){S.tab=t.dataset.tab;S.q="";render();return}
     if(t.id==="only"){S.only=!S.only;render();return}
     if(t.id==="editBtn"){startEdit();return}
     if(t.id==="ecancel"){if(!S.saving){S.edit=false;S.ed={};S.adds=[];render()}return}
     if(t.id==="addBtn"){
       var an=document.getElementById("addName"),nm=an.value.replace(/\s+/g," ").trim();
       if(!nm){an.focus();return}
-      var st=document.getElementById("addStage");
-      S.adds.push({name:nm,unit:document.getElementById("addUnit").value,stage:!!(st&&st.checked)});
+      var st=document.getElementById("addStage"),an2=document.getElementById("addNew");
+      S.adds.push({name:nm,unit:document.getElementById("addUnit").value,stage:!!(st&&st.checked),newMenu:!!(an2&&an2.checked)});
       an.value="";if(st)st.checked=false;renderEList();renderEBar();return;
     }
     if(t.hasAttribute("data-adel")){S.adds.splice(+t.getAttribute("data-adel"),1);renderEList();renderEBar();return}
-    if(t.dataset.ed==="stage"||t.dataset.ed==="hide"){
+    if(t.dataset.ed==="stage"||t.dataset.ed==="hide"||t.dataset.ed==="nm"){
       var rw=t.closest(".erow"),ex=(S.adm[S.venue]||[]).filter(function(x){return x.id===rw.dataset.id})[0];
       if(!ex)return;var f=eff(ex);
-      if(t.dataset.ed==="stage")setEd(ex.id,"stage",!f.stage);else setEd(ex.id,"hidden",!f.hidden);
+      if(t.dataset.ed==="nm")setEd(ex.id,"newMenu",f.newMenu===""?"new":f.newMenu==="new"?"both":"");else if(t.dataset.ed==="stage")setEd(ex.id,"stage",!f.stage);else setEd(ex.id,"hidden",!f.hidden);
       renderEList();return;
     }
     if(t.dataset.act){if(e.detail===0)stepBtn(t);return}
