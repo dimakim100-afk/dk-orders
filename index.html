@@ -334,7 +334,7 @@ textarea.in{resize:vertical;min-height:64px}
   function saveEdit(){
     var ch=buildChanges();if(!ch.length||S.saving)return;
     var v=S.venue;S.saving=true;S.edErr="";renderEBar();
-    post({action:"catalog_save",venue:v,initData:(tg&&tg.initData)||"",changes:ch},3,30000).then(function(j){
+    post({action:"catalog_save",venue:v,initData:(tg&&tg.initData)||"",changes:ch},2,90000).then(function(j){
       S.saving=false;
       if(j&&j.ok){
         S.adm[v]=j.items;CAT[v]=j.items.filter(function(x){return !x.hidden});S.live[v]=true;
